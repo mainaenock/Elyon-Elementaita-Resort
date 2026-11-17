@@ -1,0 +1,46 @@
+{
+  "name": "elyon-elementaita-resort",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm",
+  "dependencies": {
+    "@fontsource/baskervville": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
+    "@vinext/cloudflare": "latest",
+    "lucide-react": "^1.49.0",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-server-dom-webpack": "latest",
+    "vinext": "latest"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "beta",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "@vitejs/plugin-rsc": "latest",
+    "cf": "latest",
+    "sharp": "^0.35.5",
+    "tailwindcss": "latest",
+    "typescript": "latest",
+    "vite": "8.3.0"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "vite preview",
+    "deploy": "vinext-cloudflare deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "images": "node scripts/prepare-images.mjs"
+  },
+  "overrides": {
+    "undici": "7.29.1",
+    "fflate": "0.7.5"
+  }
+}
