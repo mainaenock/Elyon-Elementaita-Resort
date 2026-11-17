@@ -29,8 +29,9 @@ jobs:
         run: |
           # Vinext detects the Worker target from the Cloudflare config filename.
           mv cloudflare.config.ts "$RUNNER_TEMP/elyon-cloudflare.config.ts"
-          npm run build
-          if [ -n "$NEXT_PUBLIC_ELYON_BASE_PATH" ]; then
+          node node_modules/vinext/dist/cli.js build
+          test -f "dist/client$NEXT_PUBLIC_ELYON_BASE_PATH/index.html"
+          if [ -n "$NEXT_PUBLIC_ELYON_BASE_PATH" ] && [ -f dist/client/404.html ]; then
             cp dist/client/404.html "dist/client$NEXT_PUBLIC_ELYON_BASE_PATH/404.html"
           fi
         env:
