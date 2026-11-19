@@ -122,19 +122,58 @@ test("gallery filters, modal keyboard dismissal and mobile menu", async ({
 test("homepage hero plays the clips in sequence and can pause", async ({ page }) => {
   await openPage(page, "/");
   const hero = page.locator(".hero");
-  const video = hero.locator("video");
+  const video = hero.locator('video[data-active="true"]');
   await expect(video).toHaveAttribute("src", "/videos/hero/entrance.mp4");
   await expect(video).toHaveAttribute("data-visible", "true");
   await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).currentTime)).toBeGreaterThan(0);
   await expect(video).toHaveJSProperty("muted", true);
   await expect(video).toHaveJSProperty("playsInline", true);
 
+  const buffered = hero.locator('video[data-active="false"]');
+  await expect(buffered).toHaveAttribute("src", "/videos/hero/driveway.mp4");
+  const nextVideo = await buffered.elementHandle();
+
   await expect(video).toHaveAttribute("src", "/videos/hero/driveway.mp4", { timeout: 12000 });
+  expect(await nextVideo!.evaluate((el) => el === document.querySelector('video[data-active="true"]'))).toBe(true);
   await expect(video).toHaveAttribute("data-visible", "true");
   await hero.getByRole("button", { name: "Pause resort videos" }).click();
   await expect(video).toHaveJSProperty("paused", true);
   await hero.getByRole("button", { name: "Play resort videos" }).click();
   await expect(video).toHaveJSProperty("paused", false);
+});
+
+test("mobile hero uses lighter footage and compact, readable branding", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  const desktopRequests: string[] = [];
+  page.on("request", (request) => {
+    if (/\/videos\/hero\/[^/]+\.mp4$/.test(request.url()) && !request.url().endsWith("-mobile.mp4")) {
+      desktopRequests.push(request.url());
+    }
+  });
+  await openPage(page, "/");
+  const hero = page.locator(".hero");
+  const video = hero.locator('video[data-active="true"]');
+  await expect(video).toHaveAttribute("src", "/videos/hero/entrance-mobile.mp4");
+  await expect(video).toHaveAttribute("data-visible", "true");
+  await expect(video).toHaveAttribute("src", "/videos/hero/driveway-mobile.mp4", { timeout: 12000 });
+  expect(desktopRequests).toEqual([]);
+  const layout = await page.evaluate(() => {
+    const logo = document.querySelector('footer .brand img')!.getBoundingClientRect();
+    const name = document.querySelector('footer .brand > span')!.getBoundingClientRect();
+    return {
+      logoBottom: logo.bottom, nameTop: name.top, logoLeft: logo.left, nameLeft: name.left,
+      subtitleWeight: getComputedStyle(document.querySelector('.header .brand small')!).fontWeight,
+      subtitleSize: parseFloat(getComputedStyle(document.querySelector('.header .brand small')!).fontSize),
+      headlineSize: parseFloat(getComputedStyle(document.querySelector('.hero h1')!).fontSize),
+      overflow: document.documentElement.scrollWidth > innerWidth,
+    };
+  });
+  expect(layout.nameTop).toBeGreaterThan(layout.logoBottom);
+  expect(layout.nameLeft).toBe(layout.logoLeft);
+  expect(Number(layout.subtitleWeight)).toBeGreaterThanOrEqual(600);
+  expect(layout.subtitleSize).toBeGreaterThanOrEqual(9);
+  expect(layout.headlineSize).toBeLessThan(40);
+  expect(layout.overflow).toBe(false);
 });
 
 test("homepage hero offers manual navigation with reduced motion", async ({ page }) => {

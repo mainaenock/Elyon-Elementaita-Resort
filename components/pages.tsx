@@ -103,16 +103,24 @@ function HomeHero() {
   const [active, setActive] = useState(0);
   const [playback, setPlayback] = useState<"idle" | "playing" | "paused">("idle");
   const [hasVideoFrame, setHasVideoFrame] = useState(false);
+  const [mobileVideo, setMobileVideo] = useState(false);
+  const [bufferNext, setBufferNext] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const clip = heroClips[active];
   const playing = playback === "playing";
   const clipPath = `/videos/hero/${clip.id}` as const;
+  const videoIndices = bufferNext ? [active, (active + 1) % heroClips.length] : [active];
 
   useEffect(() => {
+    // Choose one rendition before mounting a video; phones never fetch the desktop file.
+    setMobileVideo(window.matchMedia("(max-width: 600px)").matches);
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const syncMotionPreference = () => {
       setPlayback(motion.matches ? "idle" : "playing");
-      if (motion.matches) setHasVideoFrame(false);
+      if (motion.matches) {
+        setHasVideoFrame(false);
+        setBufferNext(false);
+      }
     };
     syncMotionPreference();
     motion.addEventListener("change", syncMotionPreference);
@@ -149,7 +157,7 @@ function HomeHero() {
 
   return (
     <section className="hero" aria-labelledby="hero-title">
-      <div key={clip.id} className="hero-media" data-scene={clip.id}>
+      <div className="hero-media" data-scene={clip.id}>
         <img
           src={sitePath(`${clipPath}.webp`)}
           alt={clip.alt}
@@ -157,24 +165,30 @@ function HomeHero() {
           height={720}
           fetchPriority="high"
         />
-        {playback !== "idle" && (
+        {playback !== "idle" && videoIndices.map((index) => (
           <video
-            ref={videoRef}
+            key={heroClips[index].id}
+            ref={index === active ? videoRef : undefined}
             className="hero-video"
-            data-visible={hasVideoFrame}
-            src={sitePath(`${clipPath}.mp4`)}
+            data-active={index === active}
+            data-visible={index === active && hasVideoFrame}
+            src={sitePath(`/videos/hero/${heroClips[index].id}${mobileVideo ? "-mobile" : ""}.mp4`)}
             muted
             playsInline
-            preload="none"
+            preload="auto"
             aria-hidden="true"
-            onPlaying={() => setHasVideoFrame(true)}
-            onEnded={() => changeClip(1)}
-            onError={() => {
+            onPlaying={index === active ? () => {
+              setHasVideoFrame(true);
+            } : undefined}
+            // Only start buffering the next scene once the current scene has enough data.
+            onCanPlayThrough={index === active ? () => setBufferNext(true) : undefined}
+            onEnded={index === active ? () => changeClip(1) : undefined}
+            onError={index === active ? () => {
               setHasVideoFrame(false);
               setPlayback("paused");
-            }}
+            } : undefined}
           />
-        )}
+        ))}
       </div>
       <div className="hero-shade" />
       <div className="hero-content">

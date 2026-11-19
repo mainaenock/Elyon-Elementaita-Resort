@@ -1561,11 +1561,13 @@ details li {
     height: 37px;
   }
   .brand > span {
-    font-size: 26px;
+    font-size: 22px;
   }
   .brand small {
-    font-size: 6px;
-    letter-spacing: 0.17em;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1.3;
     margin-top: 6px;
   }
   .header-actions {
@@ -1663,9 +1665,22 @@ details li {
   .footer-top > div:first-child {
     grid-column: 1/-1;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 15px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .footer-top .brand {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .footer-top .brand > span {
+    font-size: 21px;
+  }
+  .footer-top .brand small {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
   }
   .footer-top > div:first-child p {
     font-size: 10px;
@@ -2064,7 +2079,8 @@ details li {
     padding-bottom: 78px;
   }
   .hero h1 {
-    font-size: clamp(48px, 12vw, 62px);
+    font-size: clamp(36px, 9.5vw, 48px);
+    line-height: 1.06;
   }
   .hero-controls {
     left: var(--gutter);
@@ -2090,6 +2106,9 @@ details li {
   .home-gather {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
+  }
+  .resort-intro h2 {
+    font-size: clamp(30px, 8vw, 40px);
   }
   .home-gather {
     gap: 28px;
