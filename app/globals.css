@@ -318,17 +318,29 @@ select {
   background: var(--deep);
   color: white;
 }
-.hero > img,
+.hero-media,
+.hero-media > img,
+.hero-media > video,
 .hero-shade {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
-.hero > img {
+.hero-media {
   z-index: -2;
-  object-position: center 54%;
-  animation: hero-in 0.45s ease-out;
+}
+.hero-media > img,
+.hero-media > video {
+  object-fit: cover;
+  object-position: var(--hero-focus, 50% 54%);
+}
+.hero-video {
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+.hero-video[data-visible="true"] {
+  opacity: 1;
 }
 .hero-shade {
   z-index: -1;
@@ -366,7 +378,7 @@ select {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
@@ -1383,10 +1395,6 @@ details li {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-@keyframes hero-in {
-  from { opacity: 0.45; }
-  to { opacity: 1; }
-}
 @media (max-width: 1100px) {
   .desktop-nav {
     gap: 18px;
@@ -2042,8 +2050,14 @@ details li {
   .hero {
     min-height: 455px;
   }
-  .hero > img {
-    object-position: 60% center;
+  .hero-media[data-scene="driveway"] {
+    --hero-focus: 77% center;
+  }
+  .hero-media[data-scene="interiors"] {
+    --hero-focus: 38% center;
+  }
+  .hero-media[data-scene="aerial"] {
+    --hero-focus: 65% center;
   }
   .hero-content {
     padding-top: 43px;
@@ -2055,6 +2069,10 @@ details li {
   .hero-controls {
     left: var(--gutter);
     transform: none;
+    gap: 5px;
+  }
+  .hero-gallery {
+    gap: 6px;
   }
   .date-search {
     grid-template-columns: repeat(2, minmax(0, 1fr));

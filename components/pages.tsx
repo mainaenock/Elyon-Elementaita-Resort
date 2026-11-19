@@ -13,6 +13,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Pause,
+  Play,
   Plus,
   Minus,
   CalendarDays,
@@ -68,10 +70,12 @@ function DateSearch() {
     </form>
   );
 }
-const heroPhotos = [
-  { id: "resort", alt: "Timber architecture and lush gardens at Elyon Elementaita Resort" },
-  { id: "gardens", alt: "Landscaped gardens and greenery at Elyon" },
-  { id: "courtyard", alt: "The courtyard and garden approach at Elyon" },
+const heroClips = [
+  { id: "entrance", alt: "The entrance sign and wooden gate at Elyon Elementaita Resort" },
+  { id: "driveway", alt: "The landscaped drive into Elyon Elementaita Resort" },
+  { id: "garden-path", alt: "A curved lawn path bordered by flower beds" },
+  { id: "interiors", alt: "Timber doors leading into the resort hall" },
+  { id: "aerial", alt: "An overhead view of the resort gardens and lawn" },
 ] as const;
 
 const homeExperiences = [
@@ -97,15 +101,81 @@ const homeExperiences = [
 
 function HomeHero() {
   const [active, setActive] = useState(0);
-  const photo = heroPhotos[active];
+  const [playback, setPlayback] = useState<"idle" | "playing" | "paused">("idle");
+  const [hasVideoFrame, setHasVideoFrame] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const clip = heroClips[active];
+  const playing = playback === "playing";
+  const clipPath = `/videos/hero/${clip.id}` as const;
 
-  function changePhoto(direction: number) {
-    setActive((current) => (current + direction + heroPhotos.length) % heroPhotos.length);
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncMotionPreference = () => {
+      setPlayback(motion.matches ? "idle" : "playing");
+      if (motion.matches) setHasVideoFrame(false);
+    };
+    syncMotionPreference();
+    motion.addEventListener("change", syncMotionPreference);
+    return () => motion.removeEventListener("change", syncMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (!playing) {
+      video.pause();
+      return;
+    }
+
+    if (video.error) video.load();
+    let current = true;
+    video.play().catch(() => {
+      if (current) setPlayback("paused");
+    });
+
+    const next = heroClips[(active + 1) % heroClips.length];
+    const poster = new Image();
+    poster.src = sitePath(`/videos/hero/${next.id}.webp`);
+
+    return () => {
+      current = false;
+    };
+  }, [active, playing]);
+
+  function changeClip(direction: number) {
+    setHasVideoFrame(false);
+    setActive((current) => (current + direction + heroClips.length) % heroClips.length);
   }
 
   return (
     <section className="hero" aria-labelledby="hero-title">
-      <Photo key={photo.id} id={photo.id} alt={photo.alt} eager />
+      <div key={clip.id} className="hero-media" data-scene={clip.id}>
+        <img
+          src={sitePath(`${clipPath}.webp`)}
+          alt={clip.alt}
+          width={1280}
+          height={720}
+          fetchPriority="high"
+        />
+        {playback !== "idle" && (
+          <video
+            ref={videoRef}
+            className="hero-video"
+            data-visible={hasVideoFrame}
+            src={sitePath(`${clipPath}.mp4`)}
+            muted
+            playsInline
+            preload="none"
+            aria-hidden="true"
+            onPlaying={() => setHasVideoFrame(true)}
+            onEnded={() => changeClip(1)}
+            onError={() => {
+              setHasVideoFrame(false);
+              setPlayback("paused");
+            }}
+          />
+        )}
+      </div>
       <div className="hero-shade" />
       <div className="hero-content">
         <h1 id="hero-title">At home in the<br />Rift Valley.</h1>
@@ -113,13 +183,20 @@ function HomeHero() {
           Explore the rooms <ArrowUpRight size={17} />
         </Link>
       </div>
-      <div className="hero-controls" role="group" aria-label="Resort photos">
-        <button type="button" onClick={() => changePhoto(-1)} aria-label="Previous resort photo">
+      <div className="hero-controls" role="group" aria-label="Resort video slides">
+        <button type="button" onClick={() => changeClip(-1)} aria-label="Previous resort video">
           <ChevronLeft size={19} />
         </button>
-        <span aria-live="polite">{active + 1} / {heroPhotos.length}</span>
-        <button type="button" onClick={() => changePhoto(1)} aria-label="Next resort photo">
+        <span aria-live={playing ? "off" : "polite"}>{active + 1} / {heroClips.length}</span>
+        <button type="button" onClick={() => changeClip(1)} aria-label="Next resort video">
           <ChevronRight size={19} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setPlayback(playing ? "paused" : "playing")}
+          aria-label={playing ? "Pause resort videos" : "Play resort videos"}
+        >
+          {playing ? <Pause size={16} /> : <Play size={16} />}
         </button>
       </div>
       <Link className="hero-gallery" href="/gallery">

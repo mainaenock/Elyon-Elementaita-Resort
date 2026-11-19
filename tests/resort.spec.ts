@@ -119,15 +119,51 @@ test("gallery filters, modal keyboard dismissal and mobile menu", async ({
   await expect(page.getByRole("button", { name: "Open menu" })).toBeVisible();
 });
 
-test("homepage photo controls cycle through the resort photos", async ({ page }) => {
+test("homepage hero plays the clips in sequence and can pause", async ({ page }) => {
   await openPage(page, "/");
   const hero = page.locator(".hero");
-  await expect(hero.getByRole("img")).toHaveAttribute("src", "/images/resort.webp");
-  await hero.getByRole("button", { name: "Next resort photo" }).click();
-  await expect(hero.getByRole("img")).toHaveAttribute("src", "/images/gardens.webp");
-  await hero.getByRole("button", { name: "Previous resort photo" }).click();
-  await hero.getByRole("button", { name: "Previous resort photo" }).click();
-  await expect(hero.getByRole("img")).toHaveAttribute("src", "/images/courtyard.webp");
+  const video = hero.locator("video");
+  await expect(video).toHaveAttribute("src", "/videos/hero/entrance.mp4");
+  await expect(video).toHaveAttribute("data-visible", "true");
+  await expect.poll(() => video.evaluate((el) => (el as HTMLVideoElement).currentTime)).toBeGreaterThan(0);
+  await expect(video).toHaveJSProperty("muted", true);
+  await expect(video).toHaveJSProperty("playsInline", true);
+
+  await expect(video).toHaveAttribute("src", "/videos/hero/driveway.mp4", { timeout: 12000 });
+  await expect(video).toHaveAttribute("data-visible", "true");
+  await hero.getByRole("button", { name: "Pause resort videos" }).click();
+  await expect(video).toHaveJSProperty("paused", true);
+  await hero.getByRole("button", { name: "Play resort videos" }).click();
+  await expect(video).toHaveJSProperty("paused", false);
+});
+
+test("homepage hero offers manual navigation with reduced motion", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 320, height: 800 });
+  await openPage(page, "/");
+  const hero = page.locator(".hero");
+  const poster = hero.getByRole("img");
+  const controls = hero.getByRole("group", { name: "Resort video slides" });
+  await expect(hero.locator("video")).toHaveCount(0);
+  await expect(poster).toHaveAttribute("src", "/videos/hero/entrance.webp");
+  await hero.getByRole("button", { name: "Previous resort video" }).click();
+  await expect(poster).toHaveAttribute("src", "/videos/hero/aerial.webp");
+  await expect(controls).toContainText("5 / 5");
+  await hero.getByRole("button", { name: "Next resort video" }).click();
+  await expect(poster).toHaveAttribute("src", "/videos/hero/entrance.webp");
+  await expect(controls).toContainText("1 / 5");
+  const controlsBox = await controls.boundingBox();
+  const galleryBox = await hero.getByRole("link", { name: "Resort gallery" }).boundingBox();
+  expect(controlsBox!.x + controlsBox!.width).toBeLessThan(galleryBox!.x);
+});
+
+test("homepage hero keeps the poster when video cannot load", async ({ page }) => {
+  await page.route("**/videos/hero/*.mp4", (route) => route.abort());
+  await openPage(page, "/");
+  const hero = page.locator(".hero");
+  await expect(hero.getByRole("button", { name: "Play resort videos" })).toBeVisible();
+  const poster = hero.getByRole("img");
+  await expect.poll(() => poster.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
 });
 
 async function openPage(page: Page, route: string) {
